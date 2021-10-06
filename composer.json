@@ -11,7 +11,8 @@
         "laravel/framework": "^8.62.0",
         "laravel/sanctum": "^2.11.2",
         "laravel/tinker": "^2.6.2",
-        "westacks/telebot": "^1.12"
+        "westacks/telebot": "^1.12",
+        "ext-json": "*"
     },
     "require-dev": {
         "facade/ignition": "^2.14.0",

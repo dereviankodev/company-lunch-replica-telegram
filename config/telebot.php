@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\Telegram\Commands\StartCommand;
+
 return [
     'default' => 'QuartSoftLunchBot',
 
@@ -16,7 +18,7 @@ return [
             'poll' => [],
 
             'handlers' => [
-
+                StartCommand::class
             ],
         ],
     ],
