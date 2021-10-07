@@ -14,13 +14,13 @@ class CreateTelegramUsersTable extends Migration
     public function up()
     {
         Schema::create('telegram_users', function (Blueprint $table) {
-            $table->unsignedBigInteger('id', false)->primary();
+            $table->string('id')->primary()->unique();
             $table->boolean('is_bot');
             $table->string('first_name');
             $table->string('last_name')->nullable();
             $table->string('username')->nullable();
             $table->string('language_code', 3);
-            $table->string('token')->nullable();
+            $table->string('token');
             $table->timestamps();
         });
     }
