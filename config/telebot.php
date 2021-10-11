@@ -1,6 +1,7 @@
 <?php
 
-use App\Services\Telegram\Commands\StartCommand;
+use App\Services\Telegram\Commands\Blanks\StartCommandBlank;
+use App\Services\Telegram\Handlers\MainHandler;
 
 return [
     'default' => 'QuartSoftLunchBot',
@@ -8,7 +9,7 @@ return [
     'bots' => [
         'QuartSoftLunchBot' => [
             'token' => env('TELEGRAM_BOT_TOKEN'),
-            'name' => env('TELEGRAM_BOT_NAME', null),
+            'name' => env('TELEGRAM_BOT_NAME'),
             'api_url' => 'http://localhost:8081',
             'exceptions' => true,
             'async' => false,
@@ -18,8 +19,11 @@ return [
             'poll' => [],
 
             'handlers' => [
-                StartCommand::class
+                StartCommandBlank::class,
+                MainHandler::class
             ],
+
+            'request_base_uri' => env('TELEGRAM_REQUEST_BASE_URI')
         ],
     ],
 ];
