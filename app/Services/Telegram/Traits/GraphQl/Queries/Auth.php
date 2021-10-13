@@ -4,9 +4,9 @@ namespace App\Services\Telegram\Traits\GraphQl\Queries;
 
 trait Auth
 {
-    public static function me(): string
+    public static function me(): array
     {
-        return <<<GQL
+        $query = <<<GQL
             query {
                 me {
                     id
@@ -14,5 +14,9 @@ trait Auth
                 }
             }
             GQL;
+
+        return [
+            'query' => $query,
+        ];
     }
 }

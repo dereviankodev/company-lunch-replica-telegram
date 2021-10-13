@@ -1,28 +1,51 @@
 <?php
 
-namespace App\Services\Telegram\Commands;
+namespace App\Services\Telegram\Handlers\Categories;
 
 use App\Models\TelegramUser;
 use App\Services\Telegram\Handlers\BaseHandler;
 use App\Services\Telegram\Traits\Clients\Client;
 use App\Services\Telegram\Traits\GraphQl\Queries\Catalog;
+use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use WeStacks\TeleBot\Handlers\CommandHandler;
+use Illuminate\Support\Str;
+use WeStacks\TeleBot\Interfaces\UpdateHandler;
+use WeStacks\TeleBot\Objects\Update;
+use WeStacks\TeleBot\TeleBot;
 
-class StartCommand extends CommandHandler
+class IndexCatalogHandler extends UpdateHandler
 {
     use Catalog;
     use Client;
 
-    protected static $aliases = ['/start'];
-    protected static $description = 'It\'s time to eat';
+    private static Collection $callbackData;
+
+    private const QUERY_ACCESSES = [
+        'categories',
+    ];
+
+    public static function trigger(Update $update, TeleBot $bot): bool
+    {
+        if (!isset($update?->callback_query)) {
+            return false;
+        }
+
+        static::$callbackData = Str::of($update->callback_query->data)->trim()->explode('=');
+
+        return collect(static::QUERY_ACCESSES)->contains(static::$callbackData->first());
+    }
 
     /**
      * @throws GuzzleException
      */
     public function handle()
     {
+        $this->answerCallbackQuery([
+            'callback_query_id' => $this->update->callback_query->id
+        ]);
+
         $user = $this->update->user();
         $hashId = BaseHandler::hashBySecret($user->id);
         $telegramUser = TelegramUser::find($hashId);
@@ -34,8 +57,9 @@ class StartCommand extends CommandHandler
         })->all();
 
         $inlineKeyboard = [];
+        $line = [];
 
-        foreach ($categories as $category) {
+        foreach ($categories as $key => $category) {
             $item = [
                 [
                     'text' => $category->name,
@@ -46,10 +70,11 @@ class StartCommand extends CommandHandler
             $inlineKeyboard[] = $item;
         }
 
-        $this->sendMessage([
-            'text' => '<strong>Добро пожаловать!</strong>',
-            'parse_mode' => 'HTML',
-        ]);
+        try {
+            $this->deleteMessage();
+        } catch (Exception $e) {
+            Log::error($e);
+        }
 
         $this->sendMessage([
             'text' => '<strong>Меню на '.date('Y-m-d').'</strong>',

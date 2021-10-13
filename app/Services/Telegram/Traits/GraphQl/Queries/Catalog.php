@@ -4,16 +4,54 @@ namespace App\Services\Telegram\Traits\GraphQl\Queries;
 
 trait Catalog
 {
-    public static function categories(): string
+    public static function categories(): array
     {
-        return <<<GQL
+        $query = <<<GQL
             query {
                 categories {
                     id
                     name
-                    img_path
+                    actualMenu {
+                        id
+                    }
                 }
             }
             GQL;
+
+        return [
+            'query' => $query,
+        ];
+    }
+
+    public static function category($categoryId): array
+    {
+        $query = <<<GQL
+            query (\$id: ID!) {
+                category(id: \$id) {
+                    id
+                    name
+                    img_path
+                    actualMenu {
+                        id
+                        price
+                        dish {
+                            id
+                            name
+                            ingredients
+                            weight
+                        }
+                    }
+                }
+            }
+            GQL;
+
+        $variables = [
+            'id' => $categoryId
+        ];
+
+        return [
+            'query' => $query,
+            'variables' => $variables
+        ];
     }
 }

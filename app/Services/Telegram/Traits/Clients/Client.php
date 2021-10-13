@@ -44,7 +44,8 @@ trait Client
 
         $response = $client->post('graphql', [
             'json' => [
-                'query' => $query
+                'query' => $query['query'],
+                'variables' => $query['variables'] ?? null
             ]
         ]);
 

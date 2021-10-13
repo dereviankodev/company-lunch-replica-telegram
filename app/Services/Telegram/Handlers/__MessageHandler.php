@@ -1,22 +1,32 @@
 <?php
 
-namespace App\Services\Telegram\Commands;
+namespace App\Services\Telegram\Handlers;
 
 use App\Models\TelegramUser;
-use App\Services\Telegram\Handlers\BaseHandler;
 use App\Services\Telegram\Traits\Clients\Client;
 use App\Services\Telegram\Traits\GraphQl\Queries\Catalog;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Support\Facades\Log;
-use WeStacks\TeleBot\Handlers\CommandHandler;
+use WeStacks\TeleBot\Interfaces\UpdateHandler;
+use WeStacks\TeleBot\Objects\Update;
+use WeStacks\TeleBot\TeleBot;
 
-class StartCommand extends CommandHandler
+class MessageHandler extends UpdateHandler
 {
     use Catalog;
     use Client;
 
-    protected static $aliases = ['/start'];
-    protected static $description = 'It\'s time to eat';
+    private const ENTITY_NAME = [
+        'Категории',
+    ];
+
+    public static function trigger(Update $update, TeleBot $bot): bool
+    {
+        if (!isset($update?->message->text)) {
+            return false;
+        }
+
+        return collect(static::ENTITY_NAME)->contains($update->message->text);
+    }
 
     /**
      * @throws GuzzleException
@@ -31,25 +41,24 @@ class StartCommand extends CommandHandler
         $data = static::clientGraphQl($request, $telegramUser->token);
         $categories = collect($data->categories)->filter(function ($value) {
             return !empty($value->actualMenu);
-        })->all();
+        })->values()->all();
 
         $inlineKeyboard = [];
+        $line = [];
 
-        foreach ($categories as $category) {
+        foreach ($categories as $key => $category) {
             $item = [
-                [
-                    'text' => $category->name,
-                    'callback_data' => 'category='.$category->id
-                ]
+                'text' => $category->name,
+                'callback_data' => 'category='.$category->id
             ];
+            $line[] = $item;
 
-            $inlineKeyboard[] = $item;
+            // Is odd
+            if ($key & 1) {
+                $inlineKeyboard[] = $line;
+                $line = [];
+            }
         }
-
-        $this->sendMessage([
-            'text' => '<strong>Добро пожаловать!</strong>',
-            'parse_mode' => 'HTML',
-        ]);
 
         $this->sendMessage([
             'text' => '<strong>Меню на '.date('Y-m-d').'</strong>',
