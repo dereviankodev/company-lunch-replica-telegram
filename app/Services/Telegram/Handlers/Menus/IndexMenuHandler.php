@@ -18,28 +18,43 @@ class IndexMenuHandler extends UpdateHandler
     private static Collection $callbackData;
 
     private const QUERY_ACCESSES = [
-        'menu',
+        'menus',
     ];
 
-    /**
-     * @inheritDoc
-     */
-    public static function trigger(Update $update, TeleBot $bot)
+    public static function trigger(Update $update, TeleBot $bot): bool
     {
         if (!isset($update?->callback_query)) {
             return false;
         }
+
+        dump($update->callback_query);
 
         static::$callbackData = Str::of($update->callback_query->data)->trim()->explode('=');
 
         return collect(static::QUERY_ACCESSES)->contains(static::$callbackData->first());
     }
 
-    /**
-     * @inheritDoc
-     */
     public function handle()
     {
-        // TODO: Implement handle() method.
+        $this->answerCallbackQuery([
+            'callback_query_id' => $this->update->callback_query->id,
+            'text' => 'Успешно добавлено в корзину'
+        ]);
+
+        $menuId = static::$callbackData->get(1);
+
+        $this->editMessageReplyMarkup([
+            'message_id' => $this->update->callback_query->message->message_id,
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [
+                        [
+                            'text' => "❌  Убрать",
+                            'callback_data' => 'menus='.$menuId.'=deleteDishFromCart'
+                        ],
+                    ]
+                ]
+            ]
+        ]);
     }
 }

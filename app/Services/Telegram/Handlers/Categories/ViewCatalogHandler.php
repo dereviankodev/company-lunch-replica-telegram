@@ -54,41 +54,65 @@ class ViewCatalogHandler extends UpdateHandler
         $data = static::clientGraphQl($request, $telegramUser->token);
         $category = collect($data->category);
 
-        $inlineKeyboard = [];
+        $this->sendMessage([
+            'text' => '🍽&#160;&#160;<strong>'.$category["name"].':</strong>',
+            'parse_mode' => 'HTML'
+        ]);
 
         foreach ($category->get('actualMenu') as $menu) {
-            $item = [
-                [
-                    'text' => $menu->dish->name.' ('.$menu->price.' грн.)',
-                    'callback_data' => 'menu='.$menu->id
-                ],
-            ];
-
-            $inlineKeyboard[] = $item;
+            $this->sendMessage([
+                'text' => '<strong>'.$menu->dish->name.'</strong>'
+                    .(isset($menu->price) ? '&#160;-&#160;<strong>'.$menu->price.' грн.</strong>' : null)
+                    .(isset($menu->dish->ingredients) ? PHP_EOL.'<em>('.$menu->dish->ingredients.')</em>' : null)
+                    .(isset($menu->dish->weight) ? ', <em>'.$menu->dish->weight.' г</em>' : null)
+                ,
+                'parse_mode' => 'HTML',
+                'reply_markup' => [
+                    'inline_keyboard' => [
+                        [
+                            [
+                                'text' => "🛒  Добавить",
+                                'callback_data' => 'menus='.$menu->id.'=addDishToCart'
+                            ],
+                        ]
+                    ]
+                ]
+            ]);
         }
 
-        $inlineKeyboard[] = [
-            [
-                'text' => '🔙  Вернуться к выбору каталога',
-                'callback_data' => 'categories'
-            ]
-        ];
+//        $inlineKeyboard = [];
+//
+//        foreach ($category->get('actualMenu') as $menu) {
+//            $item = [
+//                [
+//                    'text' => $menu->dish->name.' ('.$menu->price.' грн.)',
+//                    'callback_data' => 'menus='.$menu->id
+//                ],
+//            ];
+//
+//            $inlineKeyboard[] = $item;
+//        }
+//
+//        $inlineKeyboard[] = [
+//            [
+//                'text' => '🔙  Вернуться к выбору каталога',
+//                'callback_data' => 'categories'
+//            ]
+//        ];
+//
+//        try {
+//            $this->deleteMessage();
+//        } catch (Exception $e) {
+//            Log::error($e);
+//        }
 
-        try {
-            $this->deleteMessage();
-        } catch (Exception $e) {
-            Log::error($e);
-        }
-
-        $this->sendMessage([
-            'text' => '<strong>Меню в категории '.$category["name"].'</strong>'
-                .PHP_EOL
-                .'<a href="http://lunch-replica.stage2.quartsoft.com/'.$category["img_path"].'">&#8205;</a>',
-            'parse_mode' => 'HTML',
-            'disable_web_page_preview' => false,
-            'reply_markup' => [
-                'inline_keyboard' => $inlineKeyboard
-            ]
-        ]);
+//        $this->sendMessage([
+//            'text' => '<strong>Меню в категории '.$category["name"].'</strong>',
+//            'parse_mode' => 'HTML',
+//            'disable_web_page_preview' => false,
+//            'reply_markup' => [
+//                'inline_keyboard' => $inlineKeyboard
+//            ]
+//        ]);
     }
 }

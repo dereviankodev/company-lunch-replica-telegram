@@ -30,7 +30,6 @@ trait Catalog
                 category(id: \$id) {
                     id
                     name
-                    img_path
                     actualMenu {
                         id
                         price
