@@ -2,7 +2,7 @@
 
 namespace App\Services\Telegram\Traits\GraphQl\Queries;
 
-trait Catalog
+trait CategoryQuery
 {
     public static function categories(): array
     {
@@ -23,7 +23,7 @@ trait Catalog
         ];
     }
 
-    public static function category($categoryId): array
+    public static function categoryDishes($categoryId): array
     {
         $query = <<<GQL
             query (\$id: ID!) {

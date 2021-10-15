@@ -3,9 +3,11 @@
 namespace App\Services\Telegram\Handlers;
 
 use App\Services\Telegram\Commands\StartCommand;
-use App\Services\Telegram\Handlers\Categories\IndexCatalogHandler;
-use App\Services\Telegram\Handlers\Categories\ViewCatalogHandler;
-use App\Services\Telegram\Handlers\Menus\IndexMenuHandler;
+use App\Services\Telegram\Handlers\Carts\DeleteHandler;
+use App\Services\Telegram\Handlers\Carts\GetCartHandler;
+use App\Services\Telegram\Handlers\Carts\UpsertHandler;
+use App\Services\Telegram\Handlers\Categories\ListHandler;
+use App\Services\Telegram\Handlers\Categories\ItemHandler;
 use GuzzleHttp\Exception\GuzzleException;
 use WeStacks\TeleBot\Exception\TeleBotMehtodException;
 use WeStacks\TeleBot\Objects\Update;
@@ -19,31 +21,37 @@ class MainHandler extends BaseHandler
      */
     public static function trigger(Update $update, TeleBot $bot): bool
     {
-        $start = microtime(true);
+        $mainStart = microtime(true);
         if (static::baseTrigger($update, $bot) === false) {
             return false;
         }
-        var_dump('Auth: '.number_format((microtime(true) - $start), 3));
+        var_dump('Auth: '.number_format((microtime(true) - $mainStart), 3));
+
+        $start = microtime(true);
+        $bot->callHandler(GetCartHandler::class, $update);
+        var_dump('Get Cart: '.number_format((microtime(true) - $start), 3));
 
         $start = microtime(true);
         $bot->callHandler(StartCommand::class, $update);
         var_dump('Start: '.number_format((microtime(true) - $start), 3));
 
         $start = microtime(true);
-        $bot->callHandler(IndexCatalogHandler::class, $update);
-        var_dump('Callback catalog index: '.number_format((microtime(true) - $start), 3));
+        $bot->callHandler(ListHandler::class, $update);
+        var_dump('Callback category list: '.number_format((microtime(true) - $start), 3));
 
         $start = microtime(true);
-        $bot->callHandler(ViewCatalogHandler::class, $update);
-        var_dump('Callback catalog view: '.number_format((microtime(true) - $start), 3));
+        $bot->callHandler(ItemHandler::class, $update);
+        var_dump('Callback category dishes: '.number_format((microtime(true) - $start), 3));
 
         $start = microtime(true);
-        $bot->callHandler(IndexMenuHandler::class, $update);
-        var_dump('Callback menu: '.number_format((microtime(true) - $start), 3));
+        $bot->callHandler(UpsertHandler::class, $update);
+        var_dump('Upsert: '.number_format((microtime(true) - $start), 3));
 
-//        $start = microtime(true);
-//        $bot->callHandler(MessageHandler::class, $update);
-//        var_dump('Message: '.number_format((microtime(true) - $start), 3));
+        $start = microtime(true);
+        $bot->callHandler(DeleteHandler::class, $update);
+        var_dump('Delete: '.number_format((microtime(true) - $start), 3));
+
+        var_dump('All Handlers: '.number_format((microtime(true) - $mainStart), 3));
 
         return false;
     }

@@ -4,8 +4,8 @@ namespace App\Services\Telegram\Handlers\Categories;
 
 use App\Models\TelegramUser;
 use App\Services\Telegram\Handlers\BaseHandler;
-use App\Services\Telegram\Traits\Clients\Client;
-use App\Services\Telegram\Traits\GraphQl\Queries\Catalog;
+use App\Services\Telegram\Traits\GraphQl\Queries\CategoryQuery;
+use App\Services\Telegram\Traits\HttpClients\GraphQlHttpClient;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Collection;
@@ -15,10 +15,9 @@ use WeStacks\TeleBot\Interfaces\UpdateHandler;
 use WeStacks\TeleBot\Objects\Update;
 use WeStacks\TeleBot\TeleBot;
 
-class IndexCatalogHandler extends UpdateHandler
+class ListHandler extends UpdateHandler
 {
-    use Catalog;
-    use Client;
+    use GraphQlHttpClient, CategoryQuery;
 
     private static Collection $callbackData;
 
@@ -51,18 +50,18 @@ class IndexCatalogHandler extends UpdateHandler
         $telegramUser = TelegramUser::find($hashId);
 
         $request = static::categories();
-        $data = static::clientGraphQl($request, $telegramUser->token);
+        $data = static::getGraphQlData($request, $telegramUser->token);
         $categories = collect($data->categories)->filter(function ($value) {
             return !empty($value->actualMenu);
         })->all();
 
         $inlineKeyboard = [];
-        $line = [];
 
-        foreach ($categories as $key => $category) {
+        foreach ($categories as $category) {
             $item = [
                 [
-                    'text' => $category->name,
+                    'text' => $category->name.' ('.count($category->actualMenu).')'
+                        /*.(count($category->actualMenu['cart']) === 0 ?: ', 🛒  ('.count($category->actualMenu['cart']).')')*/,
                     'callback_data' => 'category='.$category->id
                 ]
             ];

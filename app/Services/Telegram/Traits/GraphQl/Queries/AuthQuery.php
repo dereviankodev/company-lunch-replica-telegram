@@ -2,7 +2,7 @@
 
 namespace App\Services\Telegram\Traits\GraphQl\Queries;
 
-trait Auth
+trait AuthQuery
 {
     public static function me(): array
     {

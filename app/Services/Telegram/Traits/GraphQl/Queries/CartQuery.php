@@ -2,7 +2,7 @@
 
 namespace App\Services\Telegram\Traits\GraphQl\Queries;
 
-trait Cart
+trait CartQuery
 {
     public static function getCart(): array
     {
@@ -18,6 +18,9 @@ trait Cart
                             name
                             ingredients
                             weight
+                            category {
+                                id
+                            }
                         }
                     }
                 }

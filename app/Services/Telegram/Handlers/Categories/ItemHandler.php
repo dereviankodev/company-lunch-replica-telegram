@@ -4,21 +4,19 @@ namespace App\Services\Telegram\Handlers\Categories;
 
 use App\Models\TelegramUser;
 use App\Services\Telegram\Handlers\BaseHandler;
-use App\Services\Telegram\Traits\Clients\Client;
-use App\Services\Telegram\Traits\GraphQl\Queries\Catalog;
-use Exception;
+use App\Services\Telegram\Traits\GraphQl\Queries\CartQuery;
+use App\Services\Telegram\Traits\GraphQl\Queries\CategoryQuery;
+use App\Services\Telegram\Traits\HttpClients\GraphQlHttpClient;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use WeStacks\TeleBot\Interfaces\UpdateHandler;
 use WeStacks\TeleBot\Objects\Update;
 use WeStacks\TeleBot\TeleBot;
 
-class ViewCatalogHandler extends UpdateHandler
+class ItemHandler extends UpdateHandler
 {
-    use Catalog;
-    use Client;
+    use GraphQlHttpClient, CategoryQuery, CartQuery;
 
     private static Collection $callbackData;
 
@@ -50,8 +48,8 @@ class ViewCatalogHandler extends UpdateHandler
         $hashId = BaseHandler::hashBySecret($user->id);
         $telegramUser = TelegramUser::find($hashId);
 
-        $request = static::category(static::$callbackData->last());
-        $data = static::clientGraphQl($request, $telegramUser->token);
+        $request = static::categoryDishes(static::$callbackData->last());
+        $data = static::getGraphQlData($request, $telegramUser->token);
         $category = collect($data->category);
 
         $this->sendMessage([
@@ -59,7 +57,16 @@ class ViewCatalogHandler extends UpdateHandler
             'parse_mode' => 'HTML'
         ]);
 
+        $requestGetCart = static::getCart();
+        $dataGetCart = static::getGraphQlData($requestGetCart, $telegramUser->token);
+        $cartData = collect($dataGetCart->getCart);
+
         foreach ($category->get('actualMenu') as $menu) {
+            $inCard = false;
+            foreach ($cartData as $cartItem) {
+                $cartItem->menu->id !== $menu->id || ($inCard = $cartItem->id);
+            }
+
             $this->sendMessage([
                 'text' => '<strong>'.$menu->dish->name.'</strong>'
                     .(isset($menu->price) ? '&#160;-&#160;<strong>'.$menu->price.' грн.</strong>' : null)
@@ -70,49 +77,19 @@ class ViewCatalogHandler extends UpdateHandler
                 'reply_markup' => [
                     'inline_keyboard' => [
                         [
-                            [
-                                'text' => "🛒  Добавить",
-                                'callback_data' => 'menus='.$menu->id.'=addDishToCart'
-                            ],
+                            $inCard
+                                ? [
+                                    'text' => "❌  Убрать",
+                                    'callback_data' => 'deleteDishFromCart='.$inCard
+                                ]
+                                : [
+                                    'text' => "🛒  Добавить",
+                                    'callback_data' => 'upsertIntoCart='.$menu->id
+                                ]
                         ]
                     ]
                 ]
             ]);
         }
-
-//        $inlineKeyboard = [];
-//
-//        foreach ($category->get('actualMenu') as $menu) {
-//            $item = [
-//                [
-//                    'text' => $menu->dish->name.' ('.$menu->price.' грн.)',
-//                    'callback_data' => 'menus='.$menu->id
-//                ],
-//            ];
-//
-//            $inlineKeyboard[] = $item;
-//        }
-//
-//        $inlineKeyboard[] = [
-//            [
-//                'text' => '🔙  Вернуться к выбору каталога',
-//                'callback_data' => 'categories'
-//            ]
-//        ];
-//
-//        try {
-//            $this->deleteMessage();
-//        } catch (Exception $e) {
-//            Log::error($e);
-//        }
-
-//        $this->sendMessage([
-//            'text' => '<strong>Меню в категории '.$category["name"].'</strong>',
-//            'parse_mode' => 'HTML',
-//            'disable_web_page_preview' => false,
-//            'reply_markup' => [
-//                'inline_keyboard' => $inlineKeyboard
-//            ]
-//        ]);
     }
 }

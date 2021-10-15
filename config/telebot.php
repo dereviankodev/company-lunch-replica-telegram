@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\Telegram\Commands\Blanks\StartCommandBlank;
+use App\Services\Telegram\Commands\Blanks\StartBlankCommand;
 use App\Services\Telegram\Handlers\MainHandler;
 
 return [
@@ -19,7 +19,7 @@ return [
             'poll' => [],
 
             'handlers' => [
-                StartCommandBlank::class,
+                StartBlankCommand::class,
                 MainHandler::class
             ],
 

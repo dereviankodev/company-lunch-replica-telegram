@@ -4,16 +4,14 @@ namespace App\Services\Telegram\Commands;
 
 use App\Models\TelegramUser;
 use App\Services\Telegram\Handlers\BaseHandler;
-use App\Services\Telegram\Traits\Clients\Client;
-use App\Services\Telegram\Traits\GraphQl\Queries\Catalog;
+use App\Services\Telegram\Traits\GraphQl\Queries\CategoryQuery;
+use App\Services\Telegram\Traits\HttpClients\GraphQlHttpClient;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Support\Facades\Log;
 use WeStacks\TeleBot\Handlers\CommandHandler;
 
 class StartCommand extends CommandHandler
 {
-    use Catalog;
-    use Client;
+    use GraphQlHttpClient, CategoryQuery;
 
     protected static $aliases = ['/start'];
     protected static $description = 'It\'s time to eat';
@@ -28,7 +26,7 @@ class StartCommand extends CommandHandler
         $telegramUser = TelegramUser::find($hashId);
 
         $request = static::categories();
-        $data = static::clientGraphQl($request, $telegramUser->token);
+        $data = static::getGraphQlData($request, $telegramUser->token);
         $categories = collect($data->categories)->filter(function ($value) {
             return !empty($value->actualMenu);
         })->all();
@@ -38,7 +36,8 @@ class StartCommand extends CommandHandler
         foreach ($categories as $category) {
             $item = [
                 [
-                    'text' => $category->name,
+                    'text' => $category->name.' ('.count($category->actualMenu).')'
+                        /*.(count($category->actualMenu['cart']) === 0 ?: ', 🛒  ('.count($category->actualMenu['cart']).')')*/,
                     'callback_data' => 'category='.$category->id
                 ]
             ];

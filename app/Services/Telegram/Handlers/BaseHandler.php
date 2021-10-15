@@ -5,8 +5,9 @@ namespace App\Services\Telegram\Handlers;
 use App\Models\TelegramUser;
 use App\Services\Telegram\Handlers\Auth\BotHandler;
 use App\Services\Telegram\Handlers\Auth\StrangerHandler;
-use App\Services\Telegram\Traits\Clients\Client;
-use App\Services\Telegram\Traits\GraphQl\Queries\Auth;
+use App\Services\Telegram\Traits\HttpClients\AuthHttpClient;
+use App\Services\Telegram\Traits\GraphQl\Queries\AuthQuery;
+use App\Services\Telegram\Traits\HttpClients\GraphQlHttpClient;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
 use WeStacks\TeleBot\Interfaces\UpdateHandler;
@@ -15,8 +16,7 @@ use WeStacks\TeleBot\TeleBot;
 
 abstract class BaseHandler extends UpdateHandler
 {
-    use Auth;
-    use Client;
+    use AuthHttpClient, GraphQlHttpClient, AuthQuery;
 
     /**
      * @throws GuzzleException
@@ -31,7 +31,6 @@ abstract class BaseHandler extends UpdateHandler
 
         $user = $update->user();
         $hashId = static::hashBySecret($user->id);
-
         $telegramUser = TelegramUser::find($hashId);
 
         if (is_null($telegramUser)) {
@@ -55,7 +54,7 @@ abstract class BaseHandler extends UpdateHandler
         }
 
         $request = static::me();
-        $data = static::clientGraphQl($request, $telegramUser->token);
+        $data = static::getGraphQlData($request, $telegramUser->token);
 
         if (is_null($data->me)) {
             $token = BaseHandler::getToken($hashId);
@@ -86,27 +85,13 @@ abstract class BaseHandler extends UpdateHandler
         return hash_hmac('sha256', $id, $secretKey);
     }
 
-    public static function isFamiliarUser($hashId): bool
-    {
-        $uri = 'telegram/familiar-user';
-        $query = ['id' => $hashId];
-
-        try {
-            $body = static::clientAuth($uri, $query);
-        } catch (GuzzleException) {
-            return false;
-        }
-
-        return $body->in_system;
-    }
-
     public static function getToken($hashId): ?string
     {
         $uri = 'telegram/issuing-token';
         $query = ['id' => $hashId];
 
         try {
-            $body = static::clientAuth($uri, $query);
+            $body = static::getAuthData($uri, $query);
         } catch (GuzzleException) {
             return null;
         }

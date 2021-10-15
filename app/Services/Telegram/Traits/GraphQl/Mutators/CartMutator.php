@@ -2,7 +2,7 @@
 
 namespace App\Services\Telegram\Traits\GraphQl\Mutators;
 
-trait Cart
+trait CartMutator
 {
     public static function upsertIntoCart($menu_id, $count = 1): array
     {
